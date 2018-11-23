@@ -1,0 +1,2863 @@
+CompController.java
+
+package company;
+
+
+
+import java.io.BufferedOutputStream;
+
+import java.io.File;
+
+import java.io.FileNotFoundException;
+
+import java.io.FileOutputStream;
+
+import java.io.IOException;
+
+import java.util.List;
+
+import java.util.Random;
+
+
+
+import javax.servlet.ServletContext;
+
+import javax.servlet.http.HttpSession;
+
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.stereotype.Controller;
+
+import org.springframework.ui.ModelMap;
+
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import org.springframework.web.bind.annotation.PathVariable;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import org.springframework.web.bind.annotation.RequestParam;
+
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import org.springframework.web.servlet.ModelAndView;
+
+
+
+import hospital.Claim;
+
+import hospital.HospComp;
+
+import hospital.HospDao;
+
+import hospital.Hospital;
+
+import user.Member;
+
+import user.PolIssue;
+
+import user.User;
+
+import user.UserDao;
+
+
+
+@Controller
+
+public class CompController {
+
+	
+
+	 private static final String UPLOAD_DIRECTORY ="/WEB-INF/resources/uploads/company"; 
+
+	
+
+	@Autowired
+
+	CompDao compdao;
+
+	@Autowired
+
+	UserDao userdao;
+
+	@Autowired
+
+	HospDao hospdao;
+
+	@Autowired
+
+	MailMail mail;
+
+
+
+	@RequestMapping(value="/cmp_register")
+
+	public String comp_register(ModelMap model) {
+
+		
+
+		model.addAttribute("command",new Company());
+
+		return "company/comp_reg";
+
+	}
+
+	
+
+	
+
+	@RequestMapping(value="/cmp_home")
+
+	public String comp_home(ModelMap model,HttpSession session) {
+
+		
+
+		//mail.sendMail("medazur.sas@gmail.com", "sajithksasi@gmail.com", "test", "this is a test message");
+
+	
+
+		
+
+		Company c=(Company)session.getAttribute("company");
+
+		model.addAttribute("comp",c);
+
+		return "company/comp_home";
+
+	}
+
+	
+
+	@RequestMapping(value="/cmp_edit",method=RequestMethod.GET)
+
+	public String edit(ModelMap m,HttpSession session) {
+
+		Company c=(Company)session.getAttribute("company");
+
+		m.addAttribute("command",c);
+
+		return "company/comp_edit";
+
+		}
+
+	
+
+	@RequestMapping(value="/cmp_update",method=RequestMethod.POST)
+
+	public String update(@RequestParam CommonsMultipartFile[] file,@ModelAttribute("user_update")Company cmp,ModelMap m,HttpSession session) throws IOException {
+
+		
+
+		 ServletContext context = session.getServletContext();  
+
+		 String path = context.getRealPath(UPLOAD_DIRECTORY); 
+
+		 
+
+		 System.out.println(path);
+
+		    
+
+		 String file1=cmp.getLogo();
+
+		 String file2=cmp.getLic();
+
+		 
+
+		 if(!file[0].isEmpty()) {
+
+			 
+
+			  byte[] bytes = file[0].getBytes();  
+
+			    BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+
+			    new File(path +File.separator + file1)));  
+
+			    stream.write(bytes);  
+
+			    stream.flush();  
+
+			    stream.close(); 
+
+			 }
+
+			 
+
+		 if(!file[1].isEmpty()) {
+
+			    
+
+				 byte[] bytes = file[1].getBytes();  
+
+				  BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+
+			    new File(path +File.separator + file2)));  
+
+			    stream.write(bytes);  
+
+			    stream.flush();  
+
+			    stream.close(); 
+
+			 }
+
+		
+
+		this.compdao.update(cmp);
+
+		session.setAttribute("company", cmp);
+
+		//m.addAttribute("status","updated successfully");
+
+		return "redirect:/cmp_home";
+
+		}
+
+
+
+	
+
+	 @RequestMapping(value="cmp_upload",method=RequestMethod.POST)  
+
+	    public String saveimage( @RequestParam CommonsMultipartFile[] file,  
+
+	           HttpSession session,@ModelAttribute("cmp_save")Company comp,ModelMap m) throws Exception{  
+
+	  
+
+		 Random rand=new Random();
+
+	    	
+
+	    ServletContext context = session.getServletContext();  
+
+	    String path = context.getRealPath(UPLOAD_DIRECTORY); 
+
+	    
+
+	    String[] filename = file[0].getOriginalFilename().split("\\.");
+
+	    String file1=filename[0]+rand.nextInt()+"."+filename[1];
+
+	    
+
+	    filename = file[1].getOriginalFilename().split("\\.");
+
+	    String file2=filename[0]+rand.nextInt()+"."+filename[1];
+
+	    
+
+	    System.out.println(path+" "+file1);        
+
+	  
+
+	    byte[] bytes = file[0].getBytes();  
+
+	    BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+
+	    new File(path +File.separator + file1)));  
+
+	    stream.write(bytes);  
+
+	    stream.flush();  
+
+	    stream.close();  
+
+	    
+
+	    bytes = file[1].getBytes();  
+
+	    stream =new BufferedOutputStream(new FileOutputStream(  
+
+	    new File(path +File.separator + file2)));  
+
+	    stream.write(bytes);  
+
+	    stream.flush();  
+
+	    stream.close(); 
+
+	    
+
+	    comp.setLogo(file1);
+
+	    comp.setLic(file2);
+
+	    
+
+	    String response=this.compdao.save(comp);
+
+	    
+
+	    if(response.equals("success")) {       
+
+	    return "redirect:/";
+
+	    }
+
+	    else if(response.equals("email"))
+
+	    {
+
+	    	m.addAttribute("command",comp);
+
+	    	m.addAttribute("email","email already exists");
+
+			return "company/comp_reg";
+
+	    }
+
+	    else if(response.equals("uname"))
+
+	    {
+
+	    	m.addAttribute("command",comp);
+
+	    	m.addAttribute("uname","username already exists");
+
+			return "company/comp_reg";
+
+	    }
+
+	    
+
+	    return "redirect:/";
+
+	 }  
+
+	 
+
+	 
+
+	 //Policy Category Controllers
+
+	 
+
+	 @RequestMapping(value="/add_cat")
+
+		public String cat_home(ModelMap model) {
+
+			
+
+		 List<PolicyCategory> pclist=compdao.get_cat();
+
+			model.addAttribute("pclist",pclist);
+
+			model.addAttribute("command",new PolicyCategory());
+
+			return "company/policycategory_add";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/save_cat")
+
+		public String cat_register(@ModelAttribute("pcat") PolicyCategory pcat) {
+
+		 compdao.save_cat(pcat);
+
+			return "redirect:/add_cat";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/upd_cat")
+
+		public String cat_update(@ModelAttribute("pcat") PolicyCategory pcat) {
+
+		    compdao.upd_cat(pcat);
+
+			return "redirect:/add_cat";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/del_cat/{pcatid}")
+
+		public String cat_delete(@PathVariable("pcatid")String pcatid) {
+
+		 compdao.del_cat(pcatid);
+
+			return "redirect:/add_cat";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/edit_cat/{pcatid}")
+
+		public String cat_edit(@PathVariable("pcatid")String pcatid,ModelMap model) {
+
+		 
+
+		 List<PolicyCategory> pclist=compdao.get_cat();
+
+			model.addAttribute("pclist",pclist);
+
+		 
+
+		 PolicyCategory pcat=compdao.get_cat(pcatid);
+
+			model.addAttribute("command",pcat);
+
+			return "company/policycategory_edit";
+
+		}
+
+	 
+
+	 
+
+	 ///Policy Subcategory Controller
+
+	
+
+	 @RequestMapping(value="/add_scat")
+
+		public String scat_home(ModelMap model) {
+
+			
+
+		    List<PolicyCategory> clist=compdao.get_cat();
+
+			model.addAttribute("clist",clist);
+
+			
+
+			List<PolicySubCategory> pclist=compdao.get_scat();
+
+			model.addAttribute("pclist",pclist);
+
+			
+
+			model.addAttribute("command",new PolicySubCategory());
+
+			return "company/policysubcategory_add";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/save_scat")
+
+		public String scat_register(@ModelAttribute("pscat") PolicySubCategory pcat) {
+
+		 compdao.save_scat(pcat);
+
+			return "redirect:/add_scat";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/upd_scat")
+
+		public String scat_update(@ModelAttribute("pcat") PolicySubCategory pcat) {
+
+		    compdao.upd_scat(pcat);
+
+			return "redirect:/add_scat";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/del_scat/{pcatid}")
+
+		public String scat_delete(@PathVariable("pcatid")String pcatid) {
+
+		 compdao.del_scat(pcatid);
+
+			return "redirect:/add_scat";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/edit_scat/{pcatid}")
+
+		public String scat_edit(@PathVariable("pcatid")String pcatid,ModelMap model) {
+
+		 
+
+		 List<PolicyCategory> clist=compdao.get_cat();
+
+			model.addAttribute("clist",clist);
+
+		 
+
+		 List<PolicySubCategory> pclist=compdao.get_scat();
+
+			model.addAttribute("pclist",pclist);
+
+		 
+
+		 PolicySubCategory pcat=compdao.get_scat(pcatid);
+
+			model.addAttribute("command",pcat);
+
+			return "company/policysubcategory_edit";
+
+		}
+
+	 
+
+	 
+
+ //Premium Controllers
+
+	 
+
+	 @RequestMapping(value="/add_prem")
+
+		public String prem_home(ModelMap model) {
+
+			
+
+		 List<Premium> pclist=compdao.get_prem();
+
+			model.addAttribute("premlist",pclist);
+
+			model.addAttribute("command",new Premium());
+
+			return "company/premium_add";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/save_prem")
+
+		public String prem_register(@ModelAttribute("pcat") Premium pcat) {
+
+		 compdao.save_prem(pcat);
+
+			return "redirect:/add_prem";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/upd_prem")
+
+		public String prem_update(@ModelAttribute("pprem") Premium pcat) {
+
+		    compdao.upd_prem(pcat);
+
+			return "redirect:/add_prem";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/del_prem/{pcatid}")
+
+		public String prem_delete(@PathVariable("pcatid")String pcatid) {
+
+		 compdao.del_prem(pcatid);
+
+			return "redirect:/add_prem";
+
+		}
+
+	 
+
+	 @RequestMapping(value="/edit_prem/{pcatid}")
+
+		public String prem_edit(@PathVariable("pcatid")String pcatid,ModelMap model) {
+
+		 
+
+		 List<Premium> pclist=compdao.get_prem();
+
+			model.addAttribute("premlist",pclist);
+
+		 
+
+		 Premium pcat=compdao.get_prem(pcatid);
+
+			model.addAttribute("command",pcat);
+
+			return "company/premium_edit";
+
+		}
+
+	
+
+	
+
+	//Relation Controllers
+
+	 
+
+		 @RequestMapping(value="/add_rel")
+
+			public String rel_home(ModelMap model) {
+
+				
+
+			 List<Relation> pclist=compdao.get_rel();
+
+				model.addAttribute("rellist",pclist);
+
+				model.addAttribute("command",new Relation());
+
+				return "company/relation_add";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/save_rel")
+
+			public String rel_register(@ModelAttribute("pcat") Relation pcat) {
+
+			 compdao.save_rel(pcat);
+
+				return "redirect:/add_rel";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/upd_rel")
+
+			public String rel_update(@ModelAttribute("pprem") Relation pcat) {
+
+			    compdao.upd_rel(pcat);
+
+				return "redirect:/add_rel";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/del_rel/{pcatid}")
+
+			public String rel_delete(@PathVariable("pcatid")String pcatid) {
+
+			 compdao.del_rel(pcatid);
+
+				return "redirect:/add_rel";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/edit_rel/{pcatid}")
+
+			public String rel_edit(@PathVariable("pcatid")String pcatid,ModelMap model) {
+
+			 
+
+			 List<Relation> pclist=compdao.get_rel();
+
+				model.addAttribute("rellist",pclist);
+
+			 
+
+			 Relation pcat=compdao.get_rel(pcatid);
+
+				model.addAttribute("command",pcat);
+
+				return "company/relation_edit";
+
+			}
+
+		
+
+		//Feature Controllers
+
+		 
+
+		 @RequestMapping(value="/add_feat")
+
+			public String feat_home(ModelMap model) {
+
+				
+
+			 List<Feature> pclist=compdao.get_feat();
+
+				model.addAttribute("featlist",pclist);
+
+				model.addAttribute("command",new Feature());
+
+				return "company/feature_add";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/save_feat")
+
+			public String feat_register(@ModelAttribute("pcat") Feature pcat) {
+
+			 compdao.save_feat(pcat);
+
+				return "redirect:/add_feat";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/upd_feat")
+
+			public String feat_update(@ModelAttribute("pprem") Feature pcat) {
+
+			    compdao.upd_feat(pcat);
+
+				return "redirect:/add_feat";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/del_feat/{pcatid}")
+
+			public String feat_delete(@PathVariable("pcatid")String pcatid) {
+
+			 compdao.del_feat(pcatid);
+
+				return "redirect:/add_feat";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/edit_feat/{pcatid}")
+
+			public String feat_edit(@PathVariable("pcatid")String pcatid,ModelMap model) {
+
+			 
+
+			 List<Feature> pclist=compdao.get_feat();
+
+				model.addAttribute("featlist",pclist);
+
+			 
+
+			 Feature pcat=compdao.get_feat(pcatid);
+
+				model.addAttribute("command",pcat);
+
+				return "company/feature_edit";
+
+			}	
+
+	 
+
+		 
+
+//Coverage Controllers
+
+		 
+
+		 @RequestMapping(value="/add_cov")
+
+			public String cov_home(ModelMap model) {
+
+				
+
+			 List<Coverage> pclist=compdao.get_cov();
+
+				model.addAttribute("covlist",pclist);
+
+				model.addAttribute("command",new Coverage());
+
+				return "company/coverage_add";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/save_cov")
+
+			public String cov_register(@ModelAttribute("pcat") Coverage pcat) {
+
+			 compdao.save_cov(pcat);
+
+				return "redirect:/add_cov";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/upd_cov")
+
+			public String cov_update(@ModelAttribute("pprem") Coverage pcat) {
+
+			    compdao.upd_cov(pcat);
+
+				return "redirect:/add_cov";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/del_cov/{pcatid}")
+
+			public String cov_delete(@PathVariable("pcatid")String pcatid) {
+
+			 compdao.del_cov(pcatid);
+
+				return "redirect:/add_cov";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/edit_cov/{pcatid}")
+
+			public String cov_edit(@PathVariable("pcatid")String pcatid,ModelMap model) {
+
+			 
+
+			 List<Coverage> pclist=compdao.get_cov();
+
+				model.addAttribute("covlist",pclist);
+
+			 
+
+			 Coverage pcat=compdao.get_cov(pcatid);
+
+				model.addAttribute("command",pcat);
+
+				return "company/coverage_edit";
+
+			}	
+
+		 
+
+		 
+
+//Policy Controllers
+
+		 
+
+		 @RequestMapping(value="/add_pol")
+
+			public String pol_home(ModelMap model,HttpSession session) {
+
+				
+
+			 Company comp=(Company)session.getAttribute("company");
+
+			 List<Policy> pclist=compdao.get_pol_by_compid(""+comp.getId());
+
+				model.addAttribute("plist",pclist);
+
+				model.addAttribute("covlist",compdao.get_cov());
+
+				model.addAttribute("premlist",compdao.get_prem());
+
+				model.addAttribute("pcatlist",compdao.get_cat());
+
+				model.addAttribute("pscatlist",compdao.get_scat());
+
+				model.addAttribute("command",new Policy());
+
+				return "company/policy_add";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/save_pol",method=RequestMethod.POST)
+
+			public String pol_register(@RequestParam CommonsMultipartFile[] file,@ModelAttribute("pcat") Policy pcat,HttpSession session) throws IOException {
+
+			 Random rand=new Random();
+
+		    	
+
+			    ServletContext context = session.getServletContext();  
+
+			    String path = context.getRealPath(UPLOAD_DIRECTORY); 
+
+			    
+
+			    String[] filename = file[0].getOriginalFilename().split("\\.");
+
+			    String file1=filename[0]+rand.nextInt()+"."+filename[1];
+
+			    
+
+			    filename = file[1].getOriginalFilename().split("\\.");
+
+			    String file2=filename[0]+rand.nextInt()+"."+filename[1];
+
+			    
+
+			    System.out.println(path+" "+file1);        
+
+			  
+
+			    byte[] bytes = file[0].getBytes();  
+
+			    BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+
+			    new File(path +File.separator + file1)));  
+
+			    stream.write(bytes);  
+
+			    stream.flush();  
+
+			    stream.close();  
+
+			    
+
+			    bytes = file[1].getBytes();  
+
+			    stream =new BufferedOutputStream(new FileOutputStream(  
+
+			    new File(path +File.separator + file2)));  
+
+			    stream.write(bytes);  
+
+			    stream.flush();  
+
+			    stream.close(); 
+
+			    
+
+			    pcat.setPlogo(file1);
+
+			    pcat.setClaim_form(file2);
+
+			    
+
+			    Company cmp=(Company)session.getAttribute("company");
+
+			    pcat.setCompid(cmp.getId());
+
+			 
+
+			 compdao.save_pol(pcat);
+
+				return "redirect:/add_pol";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/upd_pol")
+
+			public String pol_update(@RequestParam CommonsMultipartFile[] file,HttpSession session,@ModelAttribute("pprem") Policy pcat) throws IOException {
+
+			 ServletContext context = session.getServletContext();  
+
+			 String path = context.getRealPath(UPLOAD_DIRECTORY); 
+
+			 
+
+			 System.out.println(path);
+
+			    
+
+			 String file1=pcat.getPlogo();
+
+			 String file2=pcat.getClaim_form();
+
+
+
+			 System.out.println(file1);
+
+			 
+
+			 if(!file[0].isEmpty()) {
+
+				 
+
+				  byte[] bytes = file[0].getBytes();  
+
+				    BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+
+				    new File(path +File.separator + file1)));  
+
+				    stream.write(bytes);  
+
+				    stream.flush();  
+
+				    stream.close(); 
+
+				 }
+
+				 
+
+			 if(!file[1].isEmpty()) {
+
+				    
+
+					 byte[] bytes = file[1].getBytes();  
+
+					  BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+
+				    new File(path +File.separator + file2)));  
+
+				    stream.write(bytes);  
+
+				    stream.flush();  
+
+				    stream.close(); 
+
+				 }
+
+			
+
+			   Company cmp=(Company)session.getAttribute("company");
+
+			    pcat.setCompid(cmp.getId());
+
+			 
+
+			 compdao.upd_pol(pcat);
+
+				return "redirect:/add_pol";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/del_pol/{pcatid}")
+
+			public String pol_delete(@PathVariable("pcatid")String pcatid) {
+
+			 compdao.del_pol(pcatid);
+
+				return "redirect:/add_pol";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/edit_pol/{pcatid}")
+
+			public String pol_edit(@PathVariable("pcatid")String pcatid,HttpSession session,ModelMap model) {
+
+			 
+
+			 Company comp=(Company)session.getAttribute("company");
+
+			 List<Policy> pclist=compdao.get_pol_by_compid(""+comp.getId());
+
+				model.addAttribute("plist",pclist);
+
+				model.addAttribute("covlist",compdao.get_cov());
+
+				model.addAttribute("premlist",compdao.get_prem());
+
+				model.addAttribute("pcatlist",compdao.get_cat());
+
+				model.addAttribute("pscatlist",compdao.get_scat());
+
+			 
+
+			 Policy pcat=compdao.get_pol(pcatid);
+
+				model.addAttribute("command",pcat);
+
+				return "company/policy_edit";
+
+			}	
+
+		 
+
+		 
+
+	// Policy feature list controller	 
+
+		 @RequestMapping(value="/add_pol_feat/{pid}")
+
+			public String pol_feat_home(ModelMap model,@PathVariable("pid") String pid ) {
+
+				
+
+			 List<PolFeat> pclist=compdao.getall_pol_feat(pid);
+
+			 List<Feature> featlist=compdao.get_feat();
+
+				model.addAttribute("covlist",pclist);
+
+				model.addAttribute("clist",featlist);
+
+				PolFeat polf=new PolFeat();
+
+				polf.setPid(Integer.parseInt(pid));
+
+				model.addAttribute("command",polf);
+
+				return "company/pol_feat_add";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/save_pol_feat")
+
+			public String pol_feat_register(@ModelAttribute("pcat") PolFeat pcat) {
+
+			 compdao.save_pol_feat(pcat);
+
+				return "redirect:/add_pol_feat/"+pcat.getPid();
+
+			}
+
+		 
+
+		 @RequestMapping(value="/upd_pol_feat")
+
+			public String pol_feat_update(@ModelAttribute("pprem") PolFeat pcat) {
+
+			    compdao.upd_pol_feat(pcat);
+
+				return "redirect:/add_pol_feat/"+pcat.getPid();
+
+			}
+
+		 
+
+		 @RequestMapping(value="/del_pol_feat/{pcatid}")
+
+			public String pol_feat_delete(@PathVariable("pcatid")String pcatid) {
+
+			 
+
+			 PolFeat pcat=compdao.get_pol_feat(pcatid);
+
+			 if(pcat!=null) {
+
+			 compdao.del_pol_feat(pcatid);
+
+			 }
+
+
+
+				return "redirect:/add_pol_feat/"+pcat.getPid();
+
+			}
+
+		 
+
+		 @RequestMapping(value="/edit_pol_feat/{pcatid}")
+
+			public String pol_feat_edit(@PathVariable("pcatid")String pcatid,ModelMap model) {
+
+			
+
+			 PolFeat pcat=compdao.get_pol_feat(pcatid);
+
+				model.addAttribute("command",pcat);
+
+				 List<Feature> featlist=compdao.get_feat();
+
+					model.addAttribute("clist",featlist);
+
+				
+
+				 List<PolFeat> pclist=compdao.getall_pol_feat(""+pcat.getPid());
+
+					model.addAttribute("covlist",pclist);
+
+					
+
+				return "company/pol_feat_edit";
+
+			}
+
+		 
+
+		 @RequestMapping(value="/view_appl")
+
+			public String pol_feat_edit(ModelMap model,HttpSession session) {
+
+			
+
+			 Company comp=(Company)session.getAttribute("company");
+
+				
+
+				
+
+				 List<PolIssue> pclist=compdao.getall_appl(""+comp.getId());
+
+					
+
+				 model.addAttribute("pclist",pclist);
+
+					
+
+				return "company/view_application";
+
+			}	
+
+		 
+
+		 @RequestMapping(value="/verify_appl/{pissueid}")
+
+			public String pol_gallery(@PathVariable("pissueid")String pissueid, ModelMap model,HttpSession session) {
+
+				
+
+			 
+
+			 
+
+			    Policy pol=compdao.get_policy_by_pissueid(pissueid);
+
+				model.addAttribute("policy",pol);
+
+				
+
+				User user=compdao.get_user_by_pissueid(pissueid);
+
+				model.addAttribute("user",user);
+
+				
+
+				PolIssue pissue=userdao.check_issue_status(""+pol.getPid(), ""+user.getId()); 
+
+				model.addAttribute("pissue", pissue);
+
+				
+
+				List<Member> memlist= userdao.get_mem_by_pissueid(pissueid);
+
+				model.addAttribute("memlist",memlist);
+
+				
+
+				
+
+				return "company/verify_application";
+
+				
+
+			}
+
+		 
+
+		 @RequestMapping(value="/appl_accept/{pissueid}")
+
+			public String pol_accept(@PathVariable("pissueid")String pissueid, ModelMap model,HttpSession session) {
+
+				
+
+			 compdao.appl_status(pissueid, 1);
+
+			 
+
+			 PolIssue pissue=compdao.getpissue_byid(pissueid);
+
+				
+
+				mail.sendMail("medazur.sas@gmail.com", pissue.getEmail(), "Policy Approval", "Your Policy No:"+pissue.getPnumber()+" has been approved");
+
+				
+
+				
+
+			 
+
+				return "redirect:/view_appl";
+
+				
+
+			}
+
+		 
+
+		 @RequestMapping(value="/appl_reject/{pissueid}")
+
+			public String pol_reject(@PathVariable("pissueid")String pissueid, ModelMap model,HttpSession session) {
+
+				
+
+			 compdao.appl_status(pissueid, 0);
+
+				
+
+				return "redirect:/view_appl";
+
+				
+
+			}
+
+		 
+
+		 /////////////claim
+
+		 
+
+		 @RequestMapping(value="/view_claim")
+
+			public String claim_view(ModelMap model,HttpSession session) {
+
+			
+
+			 Company comp=(Company)session.getAttribute("company");
+
+				
+
+				
+
+				 List<Claim> pclist=compdao.get_claim_by_compid(""+comp.getId());
+
+					
+
+				 model.addAttribute("pclist",pclist);
+
+					
+
+				return "company/view_claim";
+
+			}	
+
+		 
+
+		 
+
+		 @RequestMapping(value="/verify_claim/{claimid}")
+
+			public String claim_gallery(@PathVariable("claimid")String claimid, ModelMap model,HttpSession session) {
+
+				
+
+			 Claim claim=compdao.get_claim_by_claimid(claimid);	
+
+			 model.addAttribute("claim",claim);
+
+			 
+
+			 String pissueid=""+claim.getPissueid();
+
+			 
+
+			    Policy pol=compdao.get_policy_by_pissueid(pissueid);
+
+				model.addAttribute("policy",pol);
+
+				
+
+				User user=compdao.get_user_by_pissueid(pissueid);
+
+				model.addAttribute("user",user);
+
+				
+
+				PolIssue pissue=userdao.check_issue_status(""+pol.getPid(), ""+user.getId());
+
+				model.addAttribute("pissue", pissue);
+
+				
+
+				List<Member> memlist= userdao.get_mem_by_pissueid(pissueid);
+
+				model.addAttribute("memlist",memlist);
+
+				
+
+				return "company/verify_claim";
+
+				
+
+			}
+
+		 
+
+		 @RequestMapping(value="/claim_accept/{claimid}")
+
+			public String claim_accept(@PathVariable("claimid")String claimid, ModelMap model,HttpSession session) {
+
+				
+
+			 compdao.claim_status(claimid, 1);
+
+				ClaimTrans ct=compdao.claim_transaction(claimid);
+
+		
+
+				mail.sendMail("medazur.sas@gmail.com", ct.getUser_email(), "Claim Approval", "Your claim for Rs."+ct.getClaim_amount()+" has been approved and amount transfered to accno:"+ct.getUser_accno());
+
+				
+
+				return "redirect:/view_claim";
+
+				
+
+			}
+
+		 
+
+		 @RequestMapping(value="/claim_reject/{claimid}")
+
+			public String claim_reject(@PathVariable("claimid")String claimid, ModelMap model,HttpSession session) {
+
+				
+
+			 compdao.claim_status(claimid, 2);
+
+				
+
+				return "redirect:/view_claim";
+
+				
+
+			}
+
+		 
+
+		 @RequestMapping(value="/hosp_request")
+
+			public String hosp_req(ModelMap model,HttpSession session) {
+
+			
+
+			 Company comp=(Company)session.getAttribute("company");
+
+			 List<Hospital> hosp=hospdao.getall_hospital();
+
+			    model.addAttribute("clist",hosp);
+
+			    
+
+			    List<HospComp> hospcomp=hospdao.getall_hospcomp_by_compid(""+comp.getId());
+
+			 
+
+			    model.addAttribute("pclist",hospcomp);
+
+				model.addAttribute("command",new HospitalId());
+
+				return "company/comp_hosp_req";
+
+			}
+
+		 
+
+		 
+
+		 @RequestMapping(value="req_submit",method=RequestMethod.POST)
+
+			public String req_sub(@RequestParam CommonsMultipartFile file,HttpSession session,@ModelAttribute("hospid") HospitalId hcomp) throws Exception {
+
+			 Random rand=new Random();
+
+		    	
+
+			    ServletContext context = session.getServletContext();  
+
+			    String path = context.getRealPath(UPLOAD_DIRECTORY); 
+
+			    
+
+			    String[] filename = file.getOriginalFilename().split("\\.");
+
+			    String file1=filename[0]+rand.nextInt()+"."+filename[1];
+
+			    
+
+			    
+
+			    System.out.println(path+" "+file1);        
+
+			  
+
+			    byte[] bytes = file.getBytes();  
+
+			    BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+
+			    new File(path +File.separator + file1)));  
+
+			    stream.write(bytes);  
+
+			    stream.flush();  
+
+			    stream.close();  
+
+			   
+
+			    HospComp hospcomp=new HospComp();
+
+			    
+
+			    hospcomp.setFile(file1);
+
+			   hospcomp.setHosp_id(hcomp.getHosp_id());
+
+			    
+
+			    Company cmp=(Company)session.getAttribute("company");
+
+			    hospcomp.setComp_id(cmp.getId());
+
+		
+
+			   Hospital hosp=hospdao.get_hospbyid(""+hospcomp.getHosp_id());
+
+			    
+
+				mail.sendMail("medazur.sas@gmail.com", hosp.getEmail(), "Request for Approval", "Request from "+cmp.getName()+" has been received");
+
+				
+
+			    
+
+			 hospdao.save_hospcomp(hospcomp);
+
+			    
+
+				return "redirect:/hosp_request";
+
+			} 
+
+	
+
+		 
+
+		 
+
+}
+
+CompMapper.java
+
+package company;
+
+
+
+import java.sql.ResultSet;
+
+import java.sql.SQLException;
+
+
+
+import org.springframework.jdbc.core.RowMapper;
+
+
+
+public class CompanyMapper implements RowMapper<Company>
+
+{  
+
+    public Company mapRow(ResultSet rs, int row) throws SQLException {  
+
+    	Company u=new Company();  
+
+        u.setId(rs.getInt("comp_id"));
+
+        u.setName(rs.getString("comp_name"));  
+
+        u.setAddress(rs.getString("comp_address")); 
+
+        u.setAccno(rs.getString("acc_number"));
+
+        u.setContact(rs.getString("comp_contact")); 
+
+        u.setEmail(rs.getString("comp_email")); 
+
+        u.setDetail(rs.getString("comp_detail")); 
+
+        u.setUsername(rs.getString("username"));
+
+        u.setPassword(rs.getString("password"));
+
+        u.setLic(rs.getString("comp_lic"));
+
+        u.setLogo(rs.getString("comp_logo"));
+
+        return u;  
+
+    }  
+
+}
+
+Company.java
+
+package company;
+
+
+
+public class Company {
+
+
+
+	int id;
+
+	String name;
+
+	String logo;
+
+	String lic;
+
+	String address;
+
+	String contact;
+
+	String detail;
+
+	String email;
+
+	String username;
+
+	String password;
+
+	String accno;
+
+	
+
+	
+
+	public String getPassword() {
+
+		return password;
+
+	}
+
+	public void setPassword(String password) {
+
+		this.password = password;
+
+	}
+
+	
+
+	
+
+	
+
+	public int getId() {
+
+		return id;
+
+	}
+
+	public void setId(int id) {
+
+		this.id = id;
+
+	}
+
+	public String getName() {
+
+		return name;
+
+	}
+
+	public void setName(String name) {
+
+		this.name = name;
+
+	}
+
+	public String getLogo() {
+
+		return logo;
+
+	}
+
+	public void setLogo(String logo) {
+
+		this.logo = logo;
+
+	}
+
+	public String getLic() {
+
+		return lic;
+
+	}
+
+	public void setLic(String lic) {
+
+		this.lic = lic;
+
+	}
+
+	public String getAddress() {
+
+		return address;
+
+	}
+
+	public void setAddress(String address) {
+
+		this.address = address;
+
+	}
+
+	public String getContact() {
+
+		return contact;
+
+	}
+
+	public void setContact(String contact) {
+
+		this.contact = contact;
+
+	}
+
+	public String getDetail() {
+
+		return detail;
+
+	}
+
+	public void setDetail(String detail) {
+
+		this.detail = detail;
+
+	}
+
+	public String getEmail() {
+
+		return email;
+
+	}
+
+	public void setEmail(String email) {
+
+		this.email = email;
+
+	}
+
+	public String getUsername() {
+
+		return username;
+
+	}
+
+	public void setUsername(String username) {
+
+		this.username = username;
+
+	}
+
+	public String getAccno() {
+
+		return accno;
+
+	}
+
+	public void setAccno(String accno) {
+
+		this.accno = accno;
+
+	}
+
+	
+
+	
+
+	
+
+	
+
+}
+
+CompDao.java
+
+package company;
+
+
+
+import java.util.List;
+
+
+
+import org.springframework.jdbc.core.JdbcTemplate;
+
+
+
+import hospital.Claim;
+
+import hospital.ClaimMapper;
+
+import user.PolIssue;
+
+import user.PolIssueMapper;
+
+import user.User;
+
+import user.UserMapper;
+
+
+
+public class CompDao {
+
+	JdbcTemplate template;
+
+	
+
+	public void setTemplate(JdbcTemplate template) {
+
+		this.template=template;
+
+	}
+
+	
+
+	public String save(Company u) {
+
+		
+
+		String sql2="select * from tbl_company where comp_email='"+u.getEmail()+"'";
+
+		List<Company> comp=template.query(sql2, new CompanyMapper());
+
+		if(comp.size()==0) {
+
+			
+
+			String sql3="select * from tbl_company where username='"+u.getUsername()+"'";
+
+			List<Company> comp2=template.query(sql3, new CompanyMapper());
+
+			if(comp2.size()==0) {
+
+			
+
+		String sql="insert into tbl_company(comp_name,comp_address,comp_email,comp_contact,username,password,comp_detail,comp_logo,comp_lic,acc_number) values('"+u.getName()+"','"+u.getAddress()+"','"+u.getEmail()+"','"+u.getContact()+"','"+u.getUsername()+"','"+u.getPassword()+"','"+u.getDetail()+"','"+u.getLogo()+"','"+u.getLic()+"','"+u.getAccno()+"')";
+
+		this.template.update(sql);
+
+		return "success";
+
+			}
+
+			else {
+
+				return "uname";
+
+			}
+
+		}
+
+		else {
+
+			return "email";
+
+		}
+
+	}
+
+	
+
+	
+
+	
+
+	public void update(Company u) {
+
+		String sql="update tbl_company set comp_name='"+u.getName()+"',comp_address='"+u.getAddress()+"',comp_email='"+u.getEmail()+"',comp_contact='"+u.getContact()+"',username='"+u.getUsername()+"',password='"+u.getPassword()+"',comp_detail='"+u.getDetail()+"',comp_logo='"+u.getLogo()+"',comp_lic='"+u.getLic()+"',acc_number='"+u.getAccno()+"' where comp_id='"+u.getId()+"'";
+
+		System.out.println(sql);
+
+		this.template.update(sql);
+
+	}
+
+	
+
+	public Company login(String username,String password) {
+
+		String sql="select * from tbl_company where username='"+username+"' and password='"+password+"'";
+
+		List<Company> cmplist=template.query(sql, new CompanyMapper());
+
+		return cmplist.size()>0 ? cmplist.get(0) : null;
+
+	}
+
+	
+
+	public Company get_compbyid(String comp_id) {
+
+		String sql="select * from tbl_company where comp_id='"+comp_id+"'";
+
+		List<Company> cmplist=template.query(sql, new CompanyMapper());
+
+		return cmplist.size()>0 ? cmplist.get(0) : null;
+
+	}
+
+	
+
+	///Policy Category
+
+	
+
+	public void save_cat(PolicyCategory pcat) {
+
+		String sql="insert into tbl_policy_category(pcat_name) values ('"+pcat.getPcatname()+"')";
+
+	    this.template.update(sql);
+
+	}
+
+	
+
+	public void upd_cat(PolicyCategory pcat) {
+
+		String sql="update tbl_policy_category set pcat_name='"+pcat.getPcatname()+"' where pcat_id='"+pcat.getPcatid()+"'";
+
+	    this.template.update(sql);
+
+	}
+
+	
+
+	public List<PolicyCategory> get_cat() {
+
+		String sql="select * from tbl_policy_category";
+
+		List<PolicyCategory> catlist=template.query(sql, new PolicyCategoryMapper());
+
+		return catlist;
+
+	}
+
+	
+
+	public void del_cat(String pcatid) {
+
+		String sql="delete from tbl_policy_category where pcat_id='"+pcatid+"'";
+
+	    this.template.update(sql);
+
+	}
+
+	
+
+	public PolicyCategory get_cat(String pcat_id) {
+
+		String sql="select * from tbl_policy_category where pcat_id='"+pcat_id+"'";
+
+		List<PolicyCategory> catlist=template.query(sql, new PolicyCategoryMapper());
+
+		return catlist.size()>0 ? catlist.get(0) : null;
+
+	}
+
+	
+
+	
+
+	///Policy Sub category
+
+
+
+	public void save_scat(PolicySubCategory pcat) {
+
+		String sql="insert into tbl_policy_subcategory(pscat_name,pcat_id) values ('"+pcat.getPscatname()+"','"+pcat.getPcatid()+"')";
+
+	    this.template.update(sql);
+
+	}
+
+	
+
+	public void upd_scat(PolicySubCategory pcat) {
+
+		String sql="update tbl_policy_subcategory set pscat_name='"+pcat.getPscatname()+"',pcat_id='"+pcat.getPcatid()+"' where pscat_id='"+pcat.getPscatid()+"'";
+
+	    this.template.update(sql);
+
+	}
+
+	
+
+	public List<PolicySubCategory> get_scat() {
+
+		String sql="select * from tbl_policy_subcategory";
+
+		List<PolicySubCategory> catlist=template.query(sql, new PolicySubCategoryMapper());
+
+		return catlist;
+
+	}
+
+	
+
+	public List<PolicySubCategory> get_scat_by_cat(String cid) {
+
+		String sql="select * from tbl_policy_subcategory where pcat_id='"+cid+"'";
+
+		List<PolicySubCategory> catlist=template.query(sql, new PolicySubCategoryMapper());
+
+		return catlist;
+
+	}
+
+	
+
+	public void del_scat(String pcatid) {
+
+		String sql="delete from tbl_policy_subcategory where pscat_id='"+pcatid+"'";
+
+	    this.template.update(sql);
+
+	}
+
+	
+
+	public PolicySubCategory get_scat(String pscat_id) {
+
+		String sql="select * from tbl_policy_subcategory where pscat_id='"+pscat_id+"'";
+
+		List<PolicySubCategory> catlist=template.query(sql, new PolicySubCategoryMapper());
+
+		return catlist.size()>0 ? catlist.get(0) : null;
+
+	}
+
+	
+
+	
+
+	
+
+	///Premium
+
+	
+
+		public void save_prem(Premium pcat) {
+
+			String sql="insert into tbl_premium(premium_name) values ('"+pcat.getPremname()+"')";
+
+		    this.template.update(sql);
+
+		}
+
+		
+
+		public void upd_prem(Premium pcat) {
+
+			String sql="update tbl_premium set premium_name='"+pcat.getPremname()+"' where premium_id='"+pcat.getPremid()+"'";
+
+		    this.template.update(sql);
+
+		}
+
+		
+
+		public List<Premium> get_prem() {
+
+			String sql="select * from tbl_premium";
+
+			List<Premium> catlist=template.query(sql, new PremiumMapper());
+
+			return catlist;
+
+		}
+
+		
+
+		public void del_prem(String pcatid) {
+
+			String sql="delete from tbl_premium where premium_id='"+pcatid+"'";
+
+		    this.template.update(sql);
+
+		}
+
+		
+
+		public Premium get_prem(String pcat_id) {
+
+			String sql="select * from tbl_premium where premium_id='"+pcat_id+"'";
+
+			List<Premium> catlist=template.query(sql, new PremiumMapper());
+
+			return catlist.size()>0 ? catlist.get(0) : null;
+
+		}
+
+	
+
+
+
+		///Relation
+
+		
+
+			public void save_rel(Relation pcat) {
+
+				String sql="insert into tbl_relation(rel_name) values ('"+pcat.getRelname()+"')";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public void upd_rel(Relation pcat) {
+
+				String sql="update tbl_relation set rel_name='"+pcat.getRelname()+"' where rel_id='"+pcat.getRelid()+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public List<Relation> get_rel() {
+
+				String sql="select * from tbl_relation";
+
+				List<Relation> catlist=template.query(sql, new RelationMapper());
+
+				return catlist;
+
+			}
+
+			
+
+			public void del_rel(String pcatid) {
+
+				String sql="delete from tbl_relation where rel_id='"+pcatid+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public Relation get_rel(String pcat_id) {
+
+				String sql="select * from tbl_relation where rel_id='"+pcat_id+"'";
+
+				List<Relation> catlist=template.query(sql, new RelationMapper());
+
+				return catlist.size()>0 ? catlist.get(0) : null;
+
+			}
+
+
+
+			
+
+			///Feature
+
+			
+
+			public void save_feat(Feature pcat) {
+
+				String sql="insert into tbl_features(feature_name) values ('"+pcat.getFeatname()+"')";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public void upd_feat(Feature pcat) {
+
+				String sql="update tbl_features set feature_name='"+pcat.getFeatname()+"' where feature_id='"+pcat.getFeatid()+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public List<Feature> get_feat() {
+
+				String sql="select * from tbl_features";
+
+				List<Feature> catlist=template.query(sql, new FeatureMapper());
+
+				return catlist;
+
+			}
+
+			
+
+			public void del_feat(String pcatid) {
+
+				String sql="delete from tbl_features where feature_id='"+pcatid+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public Feature get_feat(String pcat_id) {
+
+				String sql="select * from tbl_features where feature_id='"+pcat_id+"'";
+
+				List<Feature> catlist=template.query(sql, new FeatureMapper());
+
+				return catlist.size()>0 ? catlist.get(0) : null;
+
+			}
+
+
+
+			
+
+//Coverage
+
+			
+
+			public void save_cov(Coverage pcat) {
+
+				String sql="insert into tbl_coverage(coverage_name,coverage_member_count,coverage_details) values ('"+pcat.getCovname()+"','"+pcat.getCovmem()+"','"+pcat.getCovdetail()+"')";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public void upd_cov(Coverage pcat) {
+
+				String sql="update tbl_coverage set coverage_name='"+pcat.getCovname()+"',coverage_member_count='"+pcat.getCovmem()+"',coverage_details='"+pcat.getCovdetail()+"' where coverage_id='"+pcat.getCovid()+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public List<Coverage> get_cov() {
+
+				String sql="select * from tbl_coverage";
+
+				List<Coverage> catlist=template.query(sql, new CoverageMapper());
+
+				return catlist;
+
+			}
+
+			
+
+			public void del_cov(String pcatid) {
+
+				String sql="delete from tbl_coverage where coverage_id='"+pcatid+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public Coverage get_cov(String pcat_id) {
+
+				String sql="select * from tbl_coverage where coverage_id='"+pcat_id+"'";
+
+				List<Coverage> catlist=template.query(sql, new CoverageMapper());
+
+				return catlist.size()>0 ? catlist.get(0) : null;
+
+			}
+
+
+
+
+
+//Policy
+
+			
+
+			public void save_pol(Policy pcat) {
+
+				String sql="insert into tbl_policy(p_name,p_logo,p_detail,comp_id,coverage_id,premium_id,premium_amount,premium_conditions,pscat_id,claim_form) values ('"+pcat.getPname()+"','"+pcat.getPlogo()+"','"+pcat.getPdetail()+"','"+pcat.getCompid()+"','"+pcat.getCovid()+"','"+pcat.getPremid()+"','"+pcat.getPremamt()+"','"+pcat.getPremcond()+"','"+pcat.getPscatid()+"','"+pcat.getClaim_form()+"')";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public void upd_pol(Policy pcat) {
+
+				String sql="update tbl_policy set p_name='"+pcat.getPname()+"',p_logo='"+pcat.getPlogo()+"',p_detail='"+pcat.getPdetail()+"',comp_id='"+pcat.getCompid()+"',coverage_id='"+pcat.getCovid()+"',premium_id='"+pcat.getPremid()+"',premium_amount='"+pcat.getPremamt()+"',premium_conditions='"+pcat.getPremcond()+"',pscat_id='"+pcat.getPscatid()+"',claim_form='"+pcat.getClaim_form()+"',comp_id='"+pcat.getCompid()+"' where p_id='"+pcat.getPid()+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public List<Policy> get_pol() {
+
+				String sql="select * from tbl_policy p,tbl_premium pr,tbl_company c,tbl_coverage cov where pr.premium_id=p.premium_id and c.comp_id=p.comp_id and cov.coverage_id=p.coverage_id";
+
+				List<Policy> catlist=template.query(sql, new PolicyMapper());
+
+				return catlist;
+
+			}
+
+			
+
+			public List<Policy> get_pol_by_compid(String comp_id) {
+
+				String sql="select * from tbl_policy p,tbl_premium pr,tbl_company c,tbl_coverage cov where pr.premium_id=p.premium_id and c.comp_id=p.comp_id and cov.coverage_id=p.coverage_id and p.comp_id='"+comp_id+"'";
+
+				List<Policy> catlist=template.query(sql, new PolicyMapper());
+
+				return catlist;
+
+			}
+
+			
+
+			public void del_pol(String pcatid) {
+
+				String sql="delete from tbl_policy where p_id='"+pcatid+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public Policy get_pol(String pcat_id) {
+
+				String sql="select * from tbl_policy p,tbl_premium pr,tbl_company c,tbl_coverage cov where pr.premium_id=p.premium_id and p_id='"+pcat_id+"' and c.comp_id=p.comp_id and cov.coverage_id=p.coverage_id";
+
+				List<Policy> catlist=template.query(sql, new PolicyMapper());
+
+				return catlist.size()>0 ? catlist.get(0) : null;
+
+			}
+
+			
+
+			public List<Policy> get_pol_by_scat(String pscat_id) {
+
+				String sql="select * from tbl_policy p,tbl_premium pr,tbl_company c,tbl_coverage cov where pr.premium_id=p.premium_id and pscat_id='"+pscat_id+"' and c.comp_id=p.comp_id and cov.coverage_id=p.coverage_id";
+
+				List<Policy> catlist=template.query(sql, new PolicyMapper());
+
+				return catlist;
+
+			}
+
+			
+
+			public List<Policy> get_pol_by_uid(String user_id) {
+
+				String sql="select * from tbl_policy p,tbl_premium pr,tbl_company c,tbl_coverage cov,tbl_policy_issue pi where pr.premium_id=p.premium_id and pi.user_id='"+user_id+"' and pi.p_id=p.p_id and c.comp_id=p.comp_id and cov.coverage_id=p.coverage_id";
+
+				List<Policy> catlist=template.query(sql, new PolicyMapper());
+
+				return catlist;
+
+			}
+
+
+
+//Policy Feature
+
+			
+
+			public void save_pol_feat(PolFeat pcat) {
+
+				String sql="insert into tbl_policy_features(p_id,feature_id,feature_coverage_amount_percentage,feature_coverage_detail) values ('"+pcat.getPid()+"','"+pcat.getFeatid()+"','"+pcat.getFeatcovamtper()+"','"+pcat.getFeatcovdetail()+"')";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public void upd_pol_feat(PolFeat pcat) {
+
+				String sql="update tbl_policy_features set feature_id='"+pcat.getFeatid()+"',feature_coverage_amount_percentage='"+pcat.getFeatcovamtper()+"',feature_coverage_detail='"+pcat.getFeatcovdetail()+"' where pf_id='"+pcat.getPolfeatid()+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public List<PolFeat> getall_pol_feat(String pid) {
+
+				String sql="select * from tbl_policy_features pf,tbl_features f where p_id='"+pid+"' and pf.feature_id=f.feature_id";
+
+				List<PolFeat> catlist=template.query(sql, new PolFeatMapper());
+
+				return catlist;
+
+			}
+
+			
+
+			public void del_pol_feat(String pcatid) {
+
+				String sql="delete from tbl_policy_features where pf_id='"+pcatid+"'";
+
+			    this.template.update(sql);
+
+			}
+
+			
+
+			public PolFeat get_pol_feat(String pcat_id) {
+
+				String sql="select * from tbl_policy_features pf,tbl_features f where pf_id='"+pcat_id+"' and pf.feature_id=f.feature_id";
+
+				List<PolFeat> catlist=template.query(sql, new PolFeatMapper());
+
+				return catlist.size()>0 ? catlist.get(0) : null;
+
+			}
+
+
+
+///Policy Issue
+
+			
+
+			public List<PolIssue> getall_appl(String cid) {
+
+				String sql="select * from tbl_policy_issue pi,tbl_policy p,tbl_user u where u.user_id=pi.user_id and p.comp_id='"+cid+"' and p.p_id=pi.p_id";
+
+				List<PolIssue> catlist=template.query(sql, new PolIssueMapper());
+
+				return catlist;
+
+			}
+
+			
+
+			
+
+			public PolIssue getpissue_byid(String pi_id) {
+
+				String sql="select * from tbl_policy_issue pi,tbl_user u where u.user_id=pi.user_id and pi.pissue_id='"+pi_id+"'";
+
+				List<PolIssue> issupolicy=template.query(sql, new PolIssueMapper());
+
+				return issupolicy.size()>0?issupolicy.get(0):null;
+
+			}
+
+			
+
+			public Policy get_policy_by_pissueid(String pissueid)
+
+			{
+
+				String sql="select * from tbl_policy p,tbl_premium pr,tbl_company c,tbl_coverage cov,tbl_policy_issue pi where pr.premium_id=p.premium_id and pi.p_id=p.p_id and c.comp_id=p.comp_id and cov.coverage_id=p.coverage_id and pi.pissue_id='"+pissueid+"'";
+
+				List<Policy> policy=template.query(sql, new PolicyMapper());
+
+				return policy.size()>0?policy.get(0):null;
+
+				
+
+			}
+
+			
+
+			public User get_user_by_pissueid(String pissueid)
+
+			{
+
+				String sql="select * from tbl_user u,tbl_policy_issue pi where pi.pissue_id='"+pissueid+"' and u.user_id=pi.user_id";
+
+				List<User> policy=template.query(sql, new UserMapper());
+
+				return policy.size()>0?policy.get(0):null;
+
+				
+
+			}
+
+			
+
+			public void appl_status(String pissueid,int status)
+
+			{
+
+				String sql="update tbl_policy_issue set status='"+status+"' where pissue_id='"+pissueid+"'";
+
+				template.update(sql);
+
+					
+
+			}
+
+			
+
+			
+
+//Claim Verify
+
+			
+
+			public List<Claim> get_claim_by_compid(String compid)
+
+			{
+
+				String sql="select * from tbl_claim c,tbl_policy_issue pi,tbl_policy p where  c.pissue_id=pi.pissue_id and pi.p_id=p.p_id and p.comp_id='"+compid+"'";
+
+				List<Claim> policy=template.query(sql, new ClaimMapper());
+
+				return policy;
+
+					
+
+			}
+
+			
+
+			public Claim get_claim_by_claimid(String claimid)
+
+			{
+
+				String sql="select * from tbl_claim c,tbl_policy_issue pi,tbl_policy p where  c.pissue_id=pi.pissue_id and pi.p_id=p.p_id and c.claim_id='"+claimid+"'";
+
+				List<Claim> policy=template.query(sql, new ClaimMapper());
+
+				return policy.size()>0?policy.get(0):null;
+
+					
+
+			}
+
+			
+
+			public List<Claim> get_claim_by_userid(String userid)
+
+			{
+
+				String sql="select * from tbl_claim c,tbl_policy_issue pi,tbl_policy p where  c.pissue_id=pi.pissue_id  and pi.p_id=p.p_id and pi.user_id='"+userid+"'";
+
+				List<Claim> policy=template.query(sql, new ClaimMapper());
+
+				return policy;
+
+					
+
+			}
+
+		
+
+			
+
+			public void claim_status(String claimid,int status)
+
+			{
+
+				String sql="update tbl_claim set status='"+status+"' where claim_id='"+claimid+"'";
+
+				template.update(sql);
+
+					
+
+			}
+
+			
+
+			public ClaimTrans claim_transaction(String claimid)
+
+			{
+
+				String sql="select c.claim_id,c.claim_amount,pf.feature_coverage_amount_percentage as claim_per,u.acc_number as user_accno,u.user_email,cmp.acc_number as cmp_accno from tbl_claim c,tbl_policy_features pf,tbl_policy_issue pi,tbl_user u,tbl_policy p,tbl_company cmp where cmp.comp_id=p.comp_id and p.p_id=pi.p_id and u.user_id=pi.user_id and pf.pf_id=c.pf_id and pi.pissue_id=c.pissue_id and c.claim_id='"+claimid+"'";
+
+				List<ClaimTrans> ct=template.query(sql, new ClaimTransMapper());
+
+				
+
+				Double claimamt=Double.parseDouble(ct.get(0).getClaim_amount())*(Double.parseDouble(ct.get(0).getClaim_per())/100);
+
+				
+
+				String sql2="insert into tbl_claim_transaction (claim_id,amount,acc_from,acc_to) values('"+ct.get(0).getClaim_id()+"','"+claimamt+"','"+ct.get(0).getCmp_accno()+"','"+ct.get(0).getUser_accno()+"')";
+
+			    template.update(sql2);
+
+			    
+
+			    return ct.size()>0?ct.get(0):null;
+
+			}
+
+			
+
+}
+
+policy_add.jsp
+
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>     
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+
+    pageEncoding="ISO-8859-1"%>
+
+    
+
+    <!-- header -->
+
+    <%@include file="../../resources/headers/compheader.jsp" %>
+
+    <!-- header end -->
+
+    
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>Add Coverage Type</title>
+
+<link rel="stylesheet" href="resources/bootstrap-4.1.3-dist/css/bootstrap.min.css">
+
+<script src="resources/js/jquery-3.3.1.min.js"></script>
+
+
+
+</head>
+
+<body style="background-image:url('resources/images/back.jpg');background-attachment:fixed;background-size:cover;">
+
+<div class="container" style="margin-top:1%;margin-bottom:4%">
+
+<div class="row">
+
+<div class="col-md-6" style="border-radius: 10% 0%;background-color: #ffffffee;border-style: ridge;border-width: 11px;border-color: burlywood;">
+
+<div class="h3" style="text-align: center">
+
+Add Policy
+
+</div>
+
+
+
+
+
+<form:form action="save_pol" method="post" enctype="multipart/form-data">
+
+<div class="form-group">
+
+<form:label path="pname">Name: </form:label>
+
+<form:input class="form-control" path="pname" required="required"/>
+
+</div>
+
+
+
+<div class="form-group">
+
+<label>Logo: </label>
+
+<input type="file" name="file" id="fileToUpload" class="form-control" required="required"/>
+
+</div>
+
+
+
+<div class="form-group">
+
+<label >Claim-form: </label>
+
+<input type="file" name="file" id="fileToUpload2" class="form-control" required="required"/>
+
+</div>
+
+
+
+<div class="form-group">
+
+<form:label path="pdetail">Detail: </form:label>
+
+<form:textarea class="form-control" path="pdetail" required="required"/>
+
+</div>
+
+
+
+<div class="form-group">
+
+<form:label path="covid">Coverage Type: </form:label>
+
+<form:select class="form-control" path="covid" >
+
+
+
+<c:forEach var="cov" items="${covlist}">
+
+<form:option value="${cov.getCovid()}">${cov.getCovname()}</form:option>
+
+</c:forEach>
+
+
+
+</form:select>
+
+</div>
+
+
+
+<div class="form-group">
+
+<form:label path="premid">Premium Type: </form:label>
+
+<form:select class="form-control" path="premid">
+
+
+
+
+
+<c:forEach var="prem" items="${premlist}">
+
+<form:option value="${prem.getPremid()}">${prem.getPremname()}</form:option>
+
+</c:forEach>
+
+
+
+</form:select>
+
+</div>
+
+
+
+<div class="form-group">
+
+<form:label path="premcond">premium condition: </form:label>
+
+<form:textarea class="form-control" path="premcond" required="required"/>
+
+</div>
+
+
+
+<div class="form-group">
+
+<form:label path="premamt">premium amount: </form:label>
+
+<form:input type="number" class="form-control" path="premamt" required="required"/>
+
+</div>
+
+
+
+<!-- <div class="form-group">
+
+<label>Policy Category Type:</label>
+
+<select class="form-control">
+
+
+
+<option value="0">select</option>
+
+
+
+<c:forEach var="pcat" items="${pcatlist}">
+
+<option value="${pcat.getPcatid()}">${pcat.getPcatname()}</option>
+
+</c:forEach>
+
+
+
+</select>
+
+</div> -->
+
+
+
+
+
+<div class="form-group">
+
+<form:label path="pscatid">Policy SubCategory Type: </form:label>
+
+<form:select class="form-control" path="pscatid">
+
+
+
+<c:forEach var="pscat" items="${pscatlist}">
+
+<form:option value="${pscat.getPscatid()}">${pscat.getPscatname()}</form:option>
+
+</c:forEach>
+
+
+
+</form:select>
+
+</div>
+
+
+
+
+
+
+
+
+
+<input class="btn btn-primary" type="submit"/>
+
+
+
+</form:form>
+
+</div>
+
+
+
+<div class="col-md-5 offset-md-1" style="border-radius:0% 10% 10% 0%;background-color: #ffffffee;border-style: ridge;border-width: 11px;border-color: burlywood;">
+
+<div class="h3" style="text-align: center">
+
+Policies
+
+</div>
+
+
+
+<table class="table">
+
+<tr><th>Policy</th><th>Edit</th><th>Delete</th></tr>
+
+<c:forEach  var="p" items="${plist}">
+
+<tr><td>${p.getPname()}</td><td><a href="edit_pol/${p.getPid()}">Edit</a></td>
+
+<td><a href="del_pol/${p.getPid()}">Delete</a></td>
+
+<td><a class="btn btn-primary" href="/Insurance_Agency/add_pol_feat/${p.getPid()}">Add Features</a></td>
+
+</tr>
+
+</c:forEach>
+
+</table>
+
+
+
+</div>
+
+</div>
+
+</div>
+
+
+
+</body>
+
+</html>
