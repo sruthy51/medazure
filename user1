@@ -1,0 +1,1608 @@
+User.java
+
+package user;
+
+
+
+public class User {
+
+	
+
+	int id;
+
+	String name;
+
+	String address;
+
+	String gender;
+
+	String email;
+
+	String phno;
+
+	String dob;
+
+	String username;
+
+	String password;
+
+	String aadhar;
+
+	String accno;
+
+	
+
+	public String getAadhar() {
+
+		return aadhar;
+
+	}
+
+
+
+	public void setAadhar(String aadhar) {
+
+		this.aadhar = aadhar;
+
+	}
+
+
+
+	public String getAccno() {
+
+		return accno;
+
+	}
+
+
+
+	public void setAccno(String accno) {
+
+		this.accno = accno;
+
+	}
+
+
+
+	public String getUsername() {
+
+		return username;
+
+	}
+
+
+
+	public void setUsername(String username) {
+
+		this.username = username;
+
+	}
+
+
+
+	public String getPassword() {
+
+		return password;
+
+	}
+
+
+
+	public void setPassword(String password) {
+
+		this.password = password;
+
+	}
+
+
+
+	public int getId() {
+
+		return id;
+
+	}
+
+
+
+	public void setId(int id) {
+
+		this.id = id;
+
+	}
+
+
+
+	public String getAddress() {
+
+		return address;
+
+	}
+
+
+
+	public void setAddress(String address) {
+
+		this.address = address;
+
+	}
+
+
+
+	public String getGender() {
+
+		return gender;
+
+	}
+
+
+
+	public void setGender(String gender) {
+
+		this.gender = gender;
+
+	}
+
+
+
+	public String getEmail() {
+
+		return email;
+
+	}
+
+
+
+	public void setEmail(String email) {
+
+		this.email = email;
+
+	}
+
+
+
+	public String getPhno() {
+
+		return phno;
+
+	}
+
+
+
+	public void setPhno(String phno) {
+
+		this.phno = phno;
+
+	}
+
+
+
+	public String getDob() {
+
+		return dob;
+
+	}
+
+
+
+	public void setDob(String dob) {
+
+		this.dob = dob;
+
+	}
+
+
+
+	public String getPhoto() {
+
+		return photo;
+
+	}
+
+
+
+	public void setPhoto(String photo) {
+
+		this.photo = photo;
+
+	}
+
+
+
+	String photo;
+
+	
+
+
+
+	public String getName() {
+
+		return name;
+
+	}
+
+
+
+	public void setName(String name) {
+
+		this.name = name;
+
+	}
+
+usercontroller.java
+
+package user;
+
+
+
+
+
+
+
+import java.io.BufferedOutputStream;
+
+import java.io.File;
+
+import java.io.FileOutputStream;
+
+import java.text.ParseException;
+
+import java.text.SimpleDateFormat;
+
+import java.util.Date;
+
+import java.util.List;
+
+import java.util.Random;
+
+
+
+import javax.servlet.ServletContext;
+
+import javax.servlet.http.HttpSession;
+
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.stereotype.Controller;
+
+import org.springframework.ui.ModelMap;
+
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import org.springframework.web.bind.annotation.PathVariable;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import org.springframework.web.bind.annotation.RequestParam;
+
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import org.springframework.web.servlet.ModelAndView;
+
+
+
+
+
+import company.CompDao;
+
+import company.Company;
+
+import company.MailMail;
+
+import company.PolFeat;
+
+import company.Policy;
+
+import company.Relation;
+
+import hospital.Claim;
+
+import hospital.HospComp;
+
+import hospital.HospDao;
+
+import hospital.Hospital;
+
+
+
+
+
+@Controller
+
+public class UserController {
+
+	
+
+	 private static final String UPLOAD_DIRECTORY ="/WEB-INF/resources/uploads/hospital"; 
+
+		
+
+	
+
+	@Autowired
+
+	UserDao userdao;
+
+	@Autowired
+
+	CompDao compdao;
+
+	@Autowired
+
+	HospDao hospdao;
+
+	@Autowired
+
+	MailMail mail;
+
+	
+
+	@RequestMapping(value="/user_register")
+
+	public String register(ModelMap model) {
+
+		model.addAttribute("command",new User());
+
+		return "user/user_reg";
+
+		}
+
+	
+
+	@RequestMapping(value="/User/user_home")
+
+	public String user_home(ModelMap model,HttpSession session) {
+
+		User u=(User)session.getAttribute("user");
+
+		model.addAttribute("user",u);
+
+		model.addAttribute("pscatlist",compdao.get_scat());
+
+		model.addAttribute("command",new Filter());
+
+		List<PolIssue> polissue=userdao.get_notification(""+u.getId());
+
+		model.addAttribute("notif",polissue);
+
+		return "user/user_home";
+
+		}
+
+	
+
+	@RequestMapping(value="/user_save",method=RequestMethod.POST)
+
+	public String save(@ModelAttribute("user_save")User user,ModelMap m) {
+
+		String response=this.userdao.save(user);
+
+		
+
+		  if(response.equals("success")) {       
+
+			    return "redirect:/";
+
+			    }
+
+			    else if(response.equals("email"))
+
+			    {
+
+			    	m.addAttribute("command",user);
+
+			    	m.addAttribute("email","email already exists");
+
+					return "user/user_reg";
+
+			    }
+
+			    else if(response.equals("uname"))
+
+			    {
+
+			    	m.addAttribute("command",user);
+
+			    	m.addAttribute("uname","username already exists");
+
+					return "user/user_reg";
+
+			    }
+
+		
+
+		return "redirect:/";
+
+		
+
+		}
+
+	
+
+	@RequestMapping(value="/User/user_update",method=RequestMethod.POST)
+
+	public String update(@ModelAttribute("user_update")User user,ModelMap m,HttpSession session) {
+
+		this.userdao.update(user);
+
+		session.setAttribute("user", user);
+
+		m.addAttribute("user",user);
+
+		//m.addAttribute("status","updated successfully");
+
+		return "redirect:/User/user_home";
+
+		}
+
+	
+
+	
+
+	@RequestMapping(value="/User/user_edit",method=RequestMethod.GET)
+
+	public String edit(ModelMap m,HttpSession session) {
+
+		User u=(User)session.getAttribute("user");
+
+		m.addAttribute("command",u);
+
+		return "user/user_edit";
+
+		}
+
+	
+
+	@RequestMapping(value="/user_register2")
+
+	public ModelAndView register2(ModelMap model) {
+
+		return new ModelAndView("user/user_reg","command",new User());
+
+		
+
+	}
+
+	
+
+	@RequestMapping(value="/pol_gal")
+
+	public String pol_gallery(@ModelAttribute("filter")Filter filter, ModelMap model) {
+
+		List<Policy> pol=compdao.get_pol_by_scat(""+filter.getPscatid());
+
+		model.addAttribute("policy",pol);
+
+		return "user/policy_gallery";
+
+		
+
+	}
+
+	
+
+	@RequestMapping(value="/pol_det/{pid}")
+
+	public String pol_gallery(@PathVariable("pid")String pid, ModelMap model,HttpSession session) {
+
+		Policy pol=compdao.get_pol(pid);
+
+		model.addAttribute("policy",pol);
+
+		
+
+		User u=(User)session.getAttribute("user");
+
+		
+
+		PolIssue pissue=userdao.check_issue_status(pid, ""+u.getId()); 
+
+		model.addAttribute("pissue", pissue);
+
+		
+
+		List<PolFeat> featlist=compdao.getall_pol_feat(pid);
+
+		model.addAttribute("featlist", featlist);
+
+		
+
+		List<HospComp> hcomp_list=hospdao.getall_hospcomp_by_compid(""+pol.getCompid());
+
+		model.addAttribute("hclist", hcomp_list);
+
+		
+
+		
+
+		return "user/policy_detail";
+
+		
+
+	}
+
+	
+
+	@RequestMapping(value="/pol_issue/{pid}")
+
+	public String pol_issue(@PathVariable("pid")String pid, ModelMap model,HttpSession session) throws Exception {
+
+		Policy pol=compdao.get_pol(pid);
+
+		model.addAttribute("policy",pol);
+
+		
+
+		List<PolFeat> featlist=compdao.getall_pol_feat(pid);
+
+		model.addAttribute("featlist", featlist);
+
+		
+
+		
+
+		User u=(User)session.getAttribute("user");
+
+		model.addAttribute("user",u);
+
+		
+
+		PolIssue polissue=userdao.check_issue_status(pid, ""+u.getId());
+
+		model.addAttribute("polissue",polissue);
+
+		
+
+		if(polissue!=null)
+
+		{
+
+		Date d=new Date();
+
+		SimpleDateFormat sdf=new SimpleDateFormat("dd-MM-yyyy");
+
+		Date d2=sdf.parse(polissue.getNextpay());
+
+		
+
+		int diff=(int)((d.getTime()-d2.getTime())/(1000*60*60*24));
+
+		model.addAttribute("date",diff);
+
+		}
+
+		
+
+		return "user/policy_issue";
+
+		
+
+	}
+
+	
+
+	@RequestMapping(value="/pol_issue_pay/{pid}")
+
+	public String pol_issue_pay(@PathVariable("pid")String pid, ModelMap model,HttpSession session) {
+
+		Policy pol=compdao.get_pol(pid);
+
+
+
+		User u=(User)session.getAttribute("user");
+
+		
+
+		Company comp=compdao.get_compbyid(""+pol.getCompid());
+
+		
+
+		model.addAttribute("comp",comp);
+
+		model.addAttribute("pol",pol);
+
+		
+
+		userdao.issue(pid, ""+u.getId(),""+pol.getPremid(),compdao);
+
+		
+
+		mail.sendMail("medazur.sas@gmail.com", comp.getEmail(), "Policy Premium Payment", "Premium Payment of Rs:"+pol.getPremamt()+" from "+u.getName()+" AccNo:"+u.getAccno()+" has been received");
+
+		
+
+		return "user/transaction";
+
+		
+
+	}
+
+	
+
+	
+
+	@RequestMapping(value="/Transaction")
+
+	public String pol_trans(ModelMap model,HttpSession session) {
+
+		
+
+	
+
+		return "user/transaction_success";
+
+		
+
+	}
+
+	
+
+	
+
+	///policy Manage
+
+	
+
+	@RequestMapping(value="/manage_policy")
+
+	public String pol_gallery(ModelMap model,HttpSession session) {
+
+		User user=(User)session.getAttribute("user");
+
+		List<Policy> pol=compdao.get_pol_by_uid(""+user.getId());
+
+		
+
+		model.addAttribute("policy",pol);
+
+		return "user/manage_policy";
+
+		
+
+	}
+
+	
+
+	
+
+	@RequestMapping(value="/pay_policy")
+
+	public String pay_gallery(ModelMap model,HttpSession session) {
+
+		User user=(User)session.getAttribute("user");
+
+		List<Policy> pol=compdao.get_pol_by_uid(""+user.getId());
+
+		model.addAttribute("policy",pol);
+
+		return "user/manage_pay";
+
+		
+
+	}
+
+	
+
+	@RequestMapping(value="/add_mem/{pissueid}")
+
+	public String add_mem(ModelMap model,HttpSession session,@PathVariable("pissueid") String pissueid) {
+
+		
+
+		Member mem=new Member();
+
+		mem.setPissueid(Integer.parseInt(pissueid));
+
+		List<Relation> rel= userdao.get_rel();
+
+		model.addAttribute("clist",rel);
+
+		
+
+		int memstatus=userdao.get_mem_count(pissueid);
+
+		
+
+		
+
+		List<Member> memlist= userdao.get_mem_by_pissueid(pissueid);
+
+		model.addAttribute("pclist",memlist);
+
+		model.addAttribute("command",mem);
+
+		model.addAttribute("memcnt",memstatus);
+
+		return "user/member_add";
+
+		
+
+	}
+
+	
+
+	
+
+	@RequestMapping(value="save_mem",method=RequestMethod.POST)  
+
+    public String save_mem(HttpSession session,@ModelAttribute("mem")Member mem) throws Exception{  
+
+  
+
+//	Random rand=new Random();
+
+//    	
+
+//    ServletContext context = session.getServletContext();  
+
+//    String path = context.getRealPath(UPLOAD_DIRECTORY); 
+
+//    
+
+//    String[] filename = file.getOriginalFilename().split("\\.");
+
+//    String file1=filename[0]+rand.nextInt()+"."+filename[1];
+
+//    
+
+//    
+
+//  
+
+//    byte[] bytes = file.getBytes();  
+
+//    BufferedOutputStream stream =new BufferedOutputStream(new FileOutputStream(  
+
+//    new File(path +File.separator + file1)));  
+
+//    stream.write(bytes);  
+
+//    stream.flush();  
+
+//    stream.close();  
+
+//    
+
+//   
+
+//    
+
+//    mem.setMemadhaar_file(file1);
+
+//    
+
+    userdao.mem_save(mem);
+
+           
+
+    return "redirect:/add_mem/"+mem.pissueid;
+
+    }  
+
+	
+
+	
+
+	@RequestMapping(value="/del_mem/{memid}")
+
+	public String del_mem(ModelMap model,HttpSession session,@PathVariable("memid") String memid) {
+
+		
+
+		userdao.mem_del(memid);
+
+		return "redirect:/manage_policy";
+
+		
+
+	}
+
+	
+
+	 /////////////claim
+
+	 
+
+	 @RequestMapping(value="/view_claim_status")
+
+		public String claim_view(ModelMap model,HttpSession session) {
+
+		
+
+		 User u=(User)session.getAttribute("user");
+
+			
+
+			
+
+			 List<Claim> pclist=compdao.get_claim_by_userid(""+u.getId());
+
+				
+
+			 model.addAttribute("pclist",pclist);
+
+				
+
+			return "user/view_claim";
+
+		}	
+
+	 
+
+	 
+
+	 @RequestMapping(value="/verify_claim_status/{claimid}")
+
+		public String claim_gallery(@PathVariable("claimid")String claimid, ModelMap model,HttpSession session) {
+
+			
+
+		 Claim claim=compdao.get_claim_by_claimid(claimid);	
+
+		 model.addAttribute("claim",claim);
+
+		 
+
+		 String pissueid=""+claim.getPissueid();
+
+		 
+
+		    Policy pol=compdao.get_policy_by_pissueid(pissueid);
+
+			model.addAttribute("policy",pol);
+
+			
+
+			User user=compdao.get_user_by_pissueid(pissueid);
+
+			model.addAttribute("user",user);
+
+			
+
+			PolIssue pissue=userdao.check_issue_status(""+pol.getPid(), ""+user.getId());
+
+			model.addAttribute("pissue", pissue);
+
+			
+
+			List<Member> memlist= userdao.get_mem_by_pissueid(pissueid);
+
+			model.addAttribute("memlist",memlist);
+
+			
+
+			return "user/verify_claim";
+
+			
+
+		}
+
+
+
+}
+
+
+
+	
+
+
+
+}
+
+UserDao.java
+
+package user;
+
+
+
+import java.text.ParseException;
+
+import java.text.SimpleDateFormat;
+
+import java.util.ArrayList;
+
+import java.util.Calendar;
+
+import java.util.Date;
+
+import java.util.List;
+
+import java.util.Random;
+
+import java.util.concurrent.TimeUnit;
+
+
+
+import org.springframework.jdbc.core.JdbcTemplate;
+
+
+
+import company.CompDao;
+
+import company.Company;
+
+import company.CompanyMapper;
+
+import company.Policy;
+
+import company.PolicyMapper;
+
+import company.Relation;
+
+import company.RelationMapper;
+
+
+
+
+
+public class UserDao {
+
+	JdbcTemplate template;
+
+	
+
+	public void setTemplate(JdbcTemplate template) {
+
+		this.template=template;
+
+	}
+
+	
+
+	public String save(User u) {
+
+		
+
+		String sql2="select * from tbl_user where user_email='"+u.getEmail()+"'";
+
+		List<User> comp=template.query(sql2, new UserMapper());
+
+		if(comp.size()==0) {
+
+			
+
+			String sql3="select * from tbl_user where username='"+u.getUsername()+"'";
+
+			List<User> comp2=template.query(sql3, new UserMapper());
+
+			if(comp2.size()==0) {
+
+		
+
+		
+
+		String sql="insert into tbl_user(user_name,user_address,user_gender,user_dob,user_email,user_phno,username,password,user_adhaar,acc_number) values('"+u.getName()+"','"+u.getAddress()+"','"+u.getGender()+"','"+u.getDob()+"','"+u.getEmail()+"','"+u.getPhno()+"','"+u.getUsername()+"','"+u.getPassword()+"','"+u.getAadhar()+"','"+u.getAccno()+"')";
+
+		this.template.update(sql);
+
+		return "success";
+
+			}
+
+			else {
+
+				return "uname";
+
+			}
+
+		}
+
+		else {
+
+			return "email";
+
+		}
+
+	}
+
+	
+
+	public void update(User u) {
+
+		String sql="update tbl_user set user_name='"+u.getName()+"',user_address='"+u.getAddress()+"',user_gender='"+u.getGender()+"',user_dob='"+u.getDob()+"',user_email='"+u.getEmail()+"',user_phno='"+u.getPhno()+"',username='"+u.getUsername()+"',password='"+u.getPassword()+"',user_adhaar='"+u.getAadhar()+"',acc_number='"+u.getAccno()+"' where user_id='"+u.getId()+"'";
+
+		System.out.println(sql);
+
+		this.template.update(sql);
+
+	}
+
+	
+
+	public User login(String username,String password) {
+
+		String sql="select * from tbl_user where username='"+username+"' and password='"+password+"'";
+
+		List<User> userlist=template.query(sql, new UserMapper());
+
+		return userlist.size()>0 ? userlist.get(0) : null;
+
+	}
+
+	
+
+	public void issue(String pid,String uid,String prid,CompDao compdao) {
+
+		Random rnd=new Random();
+
+		
+
+
+
+		PolIssue polissue=check_issue_status(pid, uid);
+
+		SimpleDateFormat sdf=new SimpleDateFormat("dd-MM-yyyy");
+
+		Calendar c=Calendar.getInstance();
+
+		String d=null;
+
+		
+
+		if(polissue==null)
+
+		{
+
+		
+
+		d=sdf.format(new Date());
+
+		
+
+		
+
+		//yearly
+
+		if(prid.equals("1"))
+
+		{
+
+		c.add(Calendar.YEAR, 1);
+
+		}
+
+		
+
+
+
+		//monthly
+
+		if(prid.equals("2"))
+
+		{
+
+		c.add(Calendar.MONTH, 1);
+
+		}
+
+		
+
+
+
+		//half yearly
+
+		if(prid.equals("5"))
+
+		{
+
+		c.add(Calendar.MONTH, 6);
+
+		}
+
+		
+
+		
+
+		String d2=sdf.format(c.getTime());
+
+		
+
+		String policy_number=pid+uid+Math.abs(rnd.nextInt());
+
+		String sql="insert into tbl_policy_issue(policy_number,p_id,user_id,first_payment_date,next_payment_date) values('"+policy_number+"','"+pid+"','"+uid+"','"+d+"','"+d2+"')";
+
+		System.out.println(sql);
+
+		this.template.update(sql);
+
+		
+
+		polissue=check_issue_status(pid, uid);
+
+		
+
+		}	
+
+		else
+
+		{
+
+			d=polissue.getNextpay();
+
+			System.out.println(d+" "+prid);
+
+			try {
+
+				
+
+				Date date=sdf.parse(d);
+
+				c.setTime(date);
+
+				
+
+				//yearly
+
+				if(prid.equals("1"))
+
+				{
+
+				c.add(Calendar.YEAR, 1);
+
+				}
+
+				
+
+
+
+				//monthly
+
+				if(prid.equals("2"))
+
+				{
+
+					System.out.println(c.getTime());
+
+				c.add(Calendar.MONTH, 1);
+
+				System.out.println(c.getTime());
+
+				}
+
+				
+
+
+
+				//half yearly
+
+				if(prid.equals("5"))
+
+				{
+
+				c.add(Calendar.MONTH, 6);
+
+				}
+
+				
+
+				String d2=sdf.format(c.getTime());
+
+				String sql="update tbl_policy_issue set next_payment_date='"+d2+"' where pissue_id='"+polissue.getPissueid()+"'";
+
+				System.out.println(sql);
+
+				this.template.update(sql);
+
+
+
+				
+
+			}catch(Exception e) {}
+
+						
+
+			
+
+		}
+
+		
+
+		
+
+		
+
+		
+
+		Policy pol=compdao.get_policy_by_pissueid(""+polissue.getPissueid());
+
+		
+
+		List<User> user=template.query("select * from tbl_user where user_id='"+uid+"'", new UserMapper());
+
+		List<Company> comp=template.query("select * from tbl_company where comp_id='"+pol.getCompid()+"'", new CompanyMapper());
+
+		
+
+		String sql2="insert into tbl_policy_transaction(pissue_id,amount,date_of_payment,acc_no_from,acc_no_to) values('"+polissue.getPissueid()+"','"+pol.getPremamt()+"','"+sdf.format(new Date())+"','"+user.get(0).getAccno()+"','"+comp.get(0).getAccno()+"')";
+
+		template.update(sql2);
+
+	}
+
+	
+
+	public PolIssue check_issue_status(String pid,String uid) {
+
+		String sql="select * from tbl_policy_issue pi,tbl_user u where pi.user_id=u.user_id and pi.p_id='"+pid+"' and pi.user_id='"+uid+"'";
+
+		List<PolIssue> userlist=template.query(sql, new PolIssueMapper());
+
+		return userlist.size()>0 ? userlist.get(0) : null;
+
+	}
+
+	
+
+	public List<Relation> get_rel(){
+
+		String sql="select * from tbl_relation";
+
+		List<Relation> rel=template.query(sql, new RelationMapper());
+
+		return rel;
+
+	}
+
+	
+
+	public List<Member> get_mem_by_pissueid(String pissueid){
+
+		String sql="select * from tbl_members m,tbl_relation r where r.rel_id=m.relation_id and pissue_id='"+pissueid+"'";
+
+		List<Member> rel=template.query(sql, new MemberMapper());
+
+		return rel;
+
+	}
+
+
+
+	public void mem_save(Member mem) {
+
+		String sql="insert into tbl_members(mem_name,mem_dob,mem_aadhar,mem_aadhar_file,pissue_id,relation_id) values('"+mem.getMemname()+"','"+mem.getMemdob()+"','"+mem.getMemadhaar()+"','"+mem.getMemadhaar_file()+"','"+mem.getPissueid()+"','"+mem.getRelid()+"')";
+
+		this.template.update(sql);
+
+	}
+
+	
+
+	public void mem_del(String memid) {
+
+		String sql="delete from tbl_members where mem_id='"+memid+"'";
+
+		this.template.update(sql);
+
+	}
+
+	
+
+	public int get_mem_count(String pissueid){
+
+		String sql="select * from tbl_members m,tbl_relation r where r.rel_id=m.relation_id and pissue_id='"+pissueid+"'";
+
+		List<Member> rel=template.query(sql,new MemberMapper());
+
+		
+
+		
+
+		String sql2="select * from tbl_policy p,tbl_premium pr,tbl_company c,tbl_coverage cov,tbl_policy_issue pi where pr.premium_id=p.premium_id and c.comp_id=p.comp_id and cov.coverage_id=p.coverage_id and pi.pissue_id='"+pissueid+"' and pi.p_id=p.p_id";
+
+		List<Policy> pol=template.query(sql2, new PolicyMapper());
+
+		
+
+		if(rel.size()==pol.get(0).getCovmem())
+
+		{
+
+			return 0;
+
+		}
+
+		else {
+
+			return 1;
+
+		}
+
+		
+
+	}
+
+	
+
+	
+
+	public List<PolIssue> get_notification(String uid){
+
+		
+
+	String sql="select * from tbl_policy_issue pi,tbl_user u where u.user_id=pi.user_id and pi.user_id='"+uid+"'";
+
+	List<PolIssue> issupolicy=template.query(sql, new PolIssueMapper());
+
+	List<PolIssue> issuepolicy2=new ArrayList<>();
+
+	SimpleDateFormat sdf=new SimpleDateFormat("dd-MM-yyyy");
+
+	Calendar c=Calendar.getInstance();
+
+	System.out.println("diff"+issupolicy.size());
+
+	for(int i=0;i<issupolicy.size();i++)
+
+	{
+
+		try {
+
+			Date d1=sdf.parse(issupolicy.get(i).getNextpay());
+
+			Date d2=new Date();
+
+			long diffmillis=Math.abs(d2.getTime()-d1.getTime());
+
+			long diff=TimeUnit.DAYS.convert(diffmillis, TimeUnit.MILLISECONDS);
+
+		System.out.println(diff);
+
+		if(diff<=5&&diff>0)
+
+		{
+
+			issuepolicy2.add(issupolicy.get(i));
+
+		}
+
+		}
+
+		catch(Exception e) {
+
+			
+
+		}
+
+		}
+
+	return issuepolicy2;
+
+	}
+
+	
+
+	
+
+	
+
+	
+
+	public List<PolIssue> get_allnotification(){
+
+		
+
+		String sql="select * from tbl_policy_issue pi,tbl_user u where u.user_id=pi.user_id";
+
+		List<PolIssue> issupolicy=template.query(sql, new PolIssueMapper());
+
+		List<PolIssue> issuepolicy2=new ArrayList<>();
+
+		SimpleDateFormat sdf=new SimpleDateFormat("dd-MM-yyyy");
+
+		Calendar c=Calendar.getInstance();
+
+		System.out.println("diff"+issupolicy.size());
+
+		for(int i=0;i<issupolicy.size();i++)
+
+		{
+
+			try {
+
+				Date d1=sdf.parse(issupolicy.get(i).getNextpay());
+
+				Date d2=new Date();
+
+				
+
+				if(d1.getTime()-d2.getTime()>0)
+
+				{
+
+				long diffmillis=Math.abs(d2.getTime()-d1.getTime());
+
+				long diff=TimeUnit.DAYS.convert(diffmillis, TimeUnit.MILLISECONDS);
+
+			System.out.println(diff);
+
+			if(diff<=5&&diff>0)
+
+			{
+
+				issuepolicy2.add(issupolicy.get(i));
+
+			}
+
+				}
+
+			}
+
+			catch(Exception e) {
+
+				
+
+			}
+
+			}
+
+		return issuepolicy2;
+
+		}
+
+	
+
+	
+
+}
+
+UserMapper.java
+
+package user;
+
+
+
+import java.sql.ResultSet;
+
+import java.sql.SQLException;
+
+
+
+import org.springframework.jdbc.core.RowMapper;
+
+
+
+public class UserMapper implements RowMapper<User>
+
+{  
+
+    public User mapRow(ResultSet rs, int row) throws SQLException {  
+
+        User u=new User();  
+
+        u.setId(rs.getInt("user_id"));
+
+        u.setName(rs.getString("user_name"));  
+
+        u.setAddress(rs.getString("user_address")); 
+
+        u.setGender(rs.getString("user_gender"));
+
+        u.setDob(rs.getString("user_dob")); 
+
+        u.setEmail(rs.getString("user_email")); 
+
+        u.setPhno(rs.getString("user_phno")); 
+
+        u.setUsername(rs.getString("username"));
+
+        u.setPassword(rs.getString("password"));
+
+        u.setAadhar(rs.getString("user_adhaar"));
+
+        u.setAccno(rs.getString("acc_number"));
+
+        return u;  
+
+    }  
+
+}
+
+Manage_policy.jsp
+
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>  
+
+
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>     
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+
+    pageEncoding="ISO-8859-1"%>
+
+    
+
+    <!-- header -->
+
+    <%@include file="../../resources/headers/userheader.jsp" %>
+
+    <!-- header end -->
+
+
+
+<html>
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>Policy_gallery</title>
+
+<link rel="stylesheet" href="/Insurance_Agency/resources/bootstrap-4.1.3-dist/css/bootstrap.min.css">
+
+<script src="/Insurance_Agency/resources/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<script src="/Insurance_Agency/resources/js/jquery-3.3.1.min.js"></script></head>
+
+<body style="background-image:url('/Insurance_Agency/resources/images/back.jpg');background-attachment:fixed;background-size:cover;">
+
+<div class="alert alert-warning">Welcome ${user.getName()}</div>
+
+
+
+
+
+<div class="container">
+
+
+
+<div class="row">
+
+
+
+<c:forEach var="pol" items="${policy}">
+
+
+
+<div class="card" style="width: 12rem;margin:10px;">
+
+  <img class="card-img-top" src="resources/uploads/company/${pol.getPlogo()}" alt="Card image cap">
+
+  <div class="card-body">
+
+    <h5 class="card-title">${pol.getPname()}</h5>
+
+    <p class="card-text">Premium : Rs.${pol.getPremamt()}</p>
+
+    <p class="card-text">Term : ${pol.getPremname()}</p>
+
+    <p class="card-text">Company : ${pol.getCompname()}</p>
+
+    <a href="/Insurance_Agency/pol_det/${pol.getPid()}" class="btn btn-primary">View</a>
+
+  </div>
+
+  </div>
+
+ 
+
+
+
+</c:forEach>
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+</body>
+
+</html>
+
+
+
+
+
+<!-- Footer -->
+
+<%@include file="../../resources/footers/guestfooter.jsp" %>
+
