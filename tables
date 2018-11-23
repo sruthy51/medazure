@@ -1,0 +1,77 @@
+Tables_in_db_insurance														
+tbl_account		tbl_account							tbl_feature					
+tbl_claim		Field	Type	Null	Key	Default	Extra		Field	Type	Null	Key	Default	Extra
+tbl_company		acc_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment		feature_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment
+tbl_coverage		acc_number	varchar(50)	YES		(NULL)			feature_name	varchar(50)	YES		(NULL)	
+tbl_features		balance	varchar(50)	YES		(NULL)								
+tbl_hospital									tbl_hospital					
+tbl_members		tbl_claim							Field	Type	Null	Key	Default	Extra
+tbl_policy		Field	Type	Null	Key	Default	Extra		hosp_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment
+tbl_policy_category		claim_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment		hosp_name	varchar(50)	YES		(NULL)	
+tbl_policy_features		pissue_id	int(10) unsigned	YES		(NULL)			hosp_logo	varchar(50)	YES		(NULL)	
+tbl_policy_issue		bill_file	varchar(50)	YES		(NULL)			hosp_lic	varchar(50)	YES		(NULL)	
+tbl_policy_subcategory		date	varchar(50)	YES		(NULL)			hosp_address	varchar(50)	YES		(NULL)	
+tbl_policy_transaction		hosp_id	int(10) unsigned	YES		(NULL)			hosp_contact	varchar(50)	YES		(NULL)	
+tbl_premium		pf_id	int(10) unsigned	YES		(NULL)			hosp_detail	varchar(50)	YES		(NULL)	
+tbl_relation		claim_amount	varchar(50)	YES		(NULL)			hosp_email	varchar(50)	YES		(NULL)	
+tbl_user		claim_appln_form	varchar(50)	YES		(NULL)			username	varchar(50)	YES		(NULL)	
+									password	varchar(50)	YES		(NULL)	
+		tbl_company							acc_number	varchar(50)	YES		(NULL)	
+		comp_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment							
+		comp_name	varchar(50)	YES		(NULL)			tbl_members					
+		comp_logo	varchar(50)	YES		(NULL)			Field	Type	Null	Key	Default	Extra
+		comp_lic	varchar(50)	YES		(NULL)			mem_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment
+		comp_address	varchar(50)	YES		(NULL)			mem_name	varchar(50)	YES		(NULL)	
+		comp_contact	varchar(50)	YES		(NULL)			mem_dob	varchar(50)	YES		(NULL)	
+		comp_detail	varchar(50)	YES		(NULL)			mem_aadhar	varchar(50)	YES		(NULL)	
+		comp_email	varchar(50)	YES		(NULL)			pissue_id	int(10) unsigned	YES		(NULL)	
+		username	varchar(50)	YES		(NULL)			relation_id	int(10) unsigned	YES		(NULL)	
+		password	varchar(50)	YES		(NULL)								
+		acc_number	varchar(50)	YES		(NULL)			tbl_policy					
+									Field	Type	Null	Key	Default	Extra
+		tbl_coverage							p_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment
+		Field	Type	Null	Key	Default	Extra		p_name	varchar(50)	YES		(NULL)	
+		coverage_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment		p_logo	varchar(50)	YES		(NULL)	
+		coverage_member_count	int(50)	YES		(NULL)			p_detail	varchar(50)	YES		(NULL)	
+		coverage_details	varchar(50)	YES		(NULL)			comp_id	int(10) unsigned	YES		(NULL)	
+									coverage_id	int(10) unsigned	YES		(NULL)	
+		tbl_policy_category							premium_id	int(10) unsigned	YES		(NULL)	
+		Field	Type	Null	Key	Default	Extra		premium_amount	varchar(50)	YES		(NULL)	
+		pcat_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment		premium_conditions	varchar(50)	YES		(NULL)	
+		pcat_name	varchar(50)	YES		(NULL)			pscat_id	int(10) unsigned	YES		(NULL)	
+														
+		tbl_policy_features							tbl_policy_issue					
+		Field	Type	Null	Key	Default	Extra		Field	Type	Null	Key	Default	Extra
+		pf_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment		pissue_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment
+		p_id	int(10) unsigned	YES		(NULL)			policy_number	varchar(50)	YES		(NULL)	
+		feature_id	int(10) unsigned	YES		(NULL)			p_id	int(10) unsigned	YES		(NULL)	
+		feature_coverage_amount_percentage	varchar(50)	YES		(NULL)			user_id	int(10) unsigned	YES		(NULL)	
+		feature_coverage_detail	varchar(50)	YES		(NULL)			first_payment_date	varchar(50)	YES		(NULL)	
+									next_payment_date	varchar(50)	YES		(NULL)	
+		tbl_policy_subcategory												
+		Field	Type	Null	Key	Default	Extra		tbl_policy_transaction					
+		pissue_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment		Field	Type	Null	Key	Default	Extra
+		policy_number	varchar(50)	YES		(NULL)			ptrans_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment
+		p_id	int(10) unsigned	YES		(NULL)			pissue_id	int(10) unsigned	YES		(NULL)	
+		user_id	int(10) unsigned	YES		(NULL)			amount	varchar(50)	YES		(NULL)	
+		first_payment_date	varchar(50)	YES		(NULL)			date_of_payment	varchar(50)	YES		(NULL)	
+		next_payment_date	varchar(50)	YES		(NULL)			acc_no_from	varchar(50)	YES		(NULL)	
+									acc_no_to	varchar(50)	YES		(NULL)	
+		tbl_premium												
+		Field	Type	Null	Key	Default	Extra		tbl_relation					
+		premium_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment		Field	Type	Null	Key	Default	Extra
+		premium_name	varchar(50)	YES		(NULL)			rel_id	int(10) unsigned	YES		(NULL)	
+									rel_name	varchar(50)	YES		(NULL)	
+		tbl_user												
+		Field	Type	Null	Key	Default	Extra							
+		user_id	int(10) unsigned	NO	PRI	(NULL)	auto_increment							
+		user_name	varchar(50)	YES		(NULL)								
+		user_address	varchar(50)	YES		(NULL)								
+		user_phno	varchar(50)	YES		(NULL)								
+		user_gender	varchar(50)	YES		(NULL)								
+		user_email	varchar(50)	YES		(NULL)								
+		user_dob	varchar(50)	YES		(NULL)								
+		username	varchar(50)	YES		(NULL)								
+		password	varchar(50)	YES		(NULL)								
+		user_adhaar	varchar(50)	YES		(NULL)								
+		acc_number	varchar(50)	YES		(NULL)								
